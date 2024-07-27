@@ -1,8 +1,9 @@
-# requirements/wordpress/Dockerfile
-FROM alpine:3.19
+FROM wordpress:latest
 
-RUN apk update && apk add --no-cache php php-fpm php-mysqli
-# Add additional PHP and WordPress dependencies here
+# Configure WordPress
+COPY ./conf/wp-config.php /var/www/html/wp-config.php
 
-# Ensure the php-fpm service is running
-CMD ["/usr/sbin/php-fpm8.1", "-F"]
+# Expose port 9000 for PHP-FPM
+EXPOSE 9000
+
+CMD ["php-fpm"]
