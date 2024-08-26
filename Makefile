@@ -1,12 +1,19 @@
-all: build
+# Makefile to build and start the Docker containers
+
+all: build up
 
 build:
-	docker-compose -f srcs/docker-compose.yml up --build -d
+	docker-compose -f srcs/docker-compose.yml build
 
-clean:
+up:
+	docker-compose -f srcs/docker-compose.yml up
+
+down:
 	docker-compose -f srcs/docker-compose.yml down
 
-fclean: clean
-	docker system prune -af
+clean: down
+	docker-compose -f srcs/docker-compose.yml rm -f
 
-re: fclean all
+re: clean all
+
+.PHONY: all build up down clean re

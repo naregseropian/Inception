@@ -1,17 +1,37 @@
-# srcs/requirements/mariadb/Dockerfile
+# Use the Alpine Linux base image
+FROM alpine:3.19
 
-FROM mariadb:latest
+# Install MariaDB and necessary dependencies
+RUN apk update
+RUN apk add --no-cache \
+    mariadb \
+    mariadb-client \
+    mysql \
+    mysql-client \
+    bash \
+    sudo
 
-# Environment variables for MariaDB
-ENV MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-ENV MYSQL_DATABASE=${MYSQL_DATABASE}
-ENV MYSQL_USER=${MYSQL_USER}
-ENV MYSQL_PASSWORD=${MYSQL_PASSWORD}
+# Ensure the data directory exists
+RUN mkdir -p /var/lib/mysql /run/mysqld /var/run/mysqld && \
+    chown -R mysql:mysql /var/lib/mysql /run/mysqld /var/run/mysqld /etc/my.cnf.d && \
+    chmod -R 750 /var/lib/mysql /run/mysqld /var/run/mysqld
 
-# Copy custom MariaDB configuration
-COPY ./conf/my.cnf /etc/mysql/my.cnf
+# Initialize the MariaDB database
+RUN mysql_install_db --user=mysql --datadir=/var/lib/mysql
 
-# Expose port 3306 for MariaDB
+COPY ./conf/mariadb.conf /etc/my.cnf.d/mariadb-server.cnf
+
+# Expose the MariaDB port
 EXPOSE 3306
 
-CMD ["mysqld"]
+
+COPY tools/auto_config.sh /usr/local/bin/
+
+RUN chmod +x /usr/local/bin/auto_config.sh
+
+USER mysql
+
+ENTRYPOINT [ "bash", "auto_config.sh" ]
+
+# Command to run MariaDB server
+# CMD ["mysqld", "--user=mysql" , "--datadir=/var/lib/mysql"]
