@@ -2,9 +2,8 @@
 FROM alpine:3.19
 
 # Install NGINX and OpenSSL
-RUN apk update && apk add --no-cache\
-    nginx \
-    openssl
+RUN apk update \
+    && apk add nginx openssl
 
 # Copy the NGINX configuration
 # Generate self-signed certificate for TLS

@@ -2,39 +2,32 @@
 FROM alpine:3.19
 
 # Install MariaDB and necessary dependencies
-RUN apk update && \
-    apk add --no-cache wget \
-    bash curl mariadb-client icu-data-full ghostscript \
-    imagemagick openssl php82 php82-fpm php82-phar php82-json php82-mysqli \
-    php82-curl php82-dom php82-exif php82-fileinfo php82-pecl-igbinary \
-    php82-pecl-imagick php82-intl php82-mbstring php82-openssl \
-    php82-xml php82-zip php82-iconv php82-shmop php82-simplexml php82-sodium \
-    php82-xmlreader php82-zlib php82-tokenizer
+RUN adduser -S -G www-data www-data \
+    && mkdir -p /var/www/html /var/log/php81 \
+    && chown -R www-data:www-data /var/www/html /var/log/php81 \
+	&& chmod -R 775 /var/www/html \
+    && apk update \
+    && apk add curl ca-certificates ghostscript imagemagick php81 fcgi \
+	&& apk add php81-fpm php81-mysqli php81-phar php81-mbstring php81-cgi \
+	php81-common php81-session php81-iconv php81-json php81-gd php81-curl \
+	php81-xml php81-imap php81-pdo php81-pdo_mysql php81-soap php81-posix \
+	php81-gettext php81-ldap php81-ctype php81-dom php81-simplexml php81-zip \
+	php81-tokenizer php81-redis
+RUN ln -sf /usr/bin/php81 /usr/bin/php
 
-RUN wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+COPY /conf/www.conf /etc/php81/php-fpm.d/www.conf
 
-RUN chmod +x wp-cli.phar
-RUN mv wp-cli.phar /usr/local/bin/wp
-RUN mkdir -p /var/www/html
-RUN cd /var/www/html && wp core download --allow-root || true
+RUN chown www-data:www-data /etc/php81/php-fpm.d/www.conf
 
-# Download and extract WordPress
-RUN wget https://wordpress.org/latest.tar.gz \
-    && tar -xzf latest.tar.gz \
-    # && cp -r wordpress/* /var/www/html/ \
-    && rm -rf wordpress latest.tar.gz
-
-# Set permissions
-# RUN chown -R www-data:www-data /var/www/html
-
-RUN mkdir -p  /var/www/html/
-
-RUN chmod 777 /var/www/html/
-
-COPY ./conf/php.conf /etc/php82/php-fpm.d/www.conf
-
+WORKDIR /usr/local/bin
+RUN curl -o wp \
+	https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+	&& chmod +x wp
 COPY tools/wordpress-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/wordpress-entrypoint.sh
 
+WORKDIR /var/www/html
+USER www-data
+ENTRYPOINT [ "wordpress-entrypoint.sh" ]
 EXPOSE 9000
-
-ENTRYPOINT [ "bash", "/usr/local/bin/wordpress-entrypoint.sh" ]
+CMD [ "php-fpm81", "-F" ]
